@@ -1,27 +1,305 @@
-import {describe,it,expect} from 'vitest';
-import {newRun,chooseNode,legalNodes,play,endTurn,draw,rule,intent,takeReward,rest,event,restore,serialize,type CardKind,type Run} from '../src/engine';
-function battle(){const s=newRun();chooseNode(s,'0-1');return s;}
-function hand(s:Run,kinds:CardKind[]){const c=s.combat!;c.hand=kinds.map((kind,i)=>({id:100+i,kind,upgraded:false}));c.draw=[];c.discard=[];c.exhaust=[];}
-describe('combat commands',()=>{
- it('opens with five cards and three energy, reproducibly',()=>{const a=battle(),b=battle();expect(a.combat!.hand).toHaveLength(5);expect(a.combat!.energy).toBe(3);expect(serialize(a)).toBe(serialize(b));});
- it('requires a living target and sufficient energy without consuming cards',()=>{const s=battle();hand(s,['flare','flare']);expect(play(s,100)).toBe(false);expect(play(s,100,99)).toBe(false);expect(s.combat!.energy).toBe(3);expect(play(s,100,1)).toBe(true);expect(s.combat!.enemies[0].hp).toBe(10);expect(s.combat!.energy).toBe(1);expect(play(s,101,1)).toBe(false);expect(s.combat!.hand).toHaveLength(1);});
- it('moves played cards to discard or exhaust and recycles only discard',()=>{const s=battle();hand(s,['cut','read']);play(s,100,1);play(s,101);expect(s.combat!.exhaust.map(c=>c.kind)).toEqual(['read']);expect(s.combat!.hand.map(c=>c.kind)).toEqual(['cut']);expect(s.combat!.draw).toHaveLength(0);});
- it('absorbs attack with Block, then expires remaining player Block',()=>{const s=battle();hand(s,['ward','ward']);play(s,100);play(s,101);expect(s.combat!.block).toBe(10);endTurn(s);expect(s.hp).toBe(64);expect(s.combat!.block).toBe(0);expect(s.combat!.energy).toBe(3);expect(s.combat!.turn).toBe(2);});
- it('discards unplayed hand and draws five by shuffling when necessary',()=>{const s=battle();const ids=s.combat!.hand.map(c=>c.id);endTurn(s);expect(s.combat!.hand).toHaveLength(5);expect(s.combat!.discard.map(c=>c.id)).toEqual(ids);endTurn(s);expect(s.combat!.hand).toHaveLength(5);expect(s.combat!.draw).toHaveLength(5);expect(s.combat!.discard).toHaveLength(0);});
- it('shows the exact weakened intent and ticks Weak after its owner acts',()=>{const s=battle();hand(s,['bash']);play(s,100,1);expect(intent(s.combat!.enemies[0])).toMatchObject({type:'attack',amount:5});endTurn(s);expect(s.hp).toBe(59);expect(s.combat!.enemies[0].weak).toBe(1);expect(intent(s.combat!.enemies[0])).toMatchObject({type:'guard',amount:6});endTurn(s);expect(s.combat!.enemies[0].weak).toBe(0);expect(s.combat!.enemies[0].block).toBe(6);endTurn(s);expect(s.combat!.enemies[0].block).toBe(0);expect(s.hp).toBe(49);});
- it('puts a Power outside the cycle, increases attacks and caps healing',()=>{const s=battle();hand(s,['focus','siphon']);play(s,100);play(s,101,1);expect(s.combat!.powers).toHaveLength(1);expect(s.combat!.enemies[0].hp).toBe(15);expect(s.hp).toBe(64);expect(s.combat!.exhaust).toHaveLength(1);});
- it('resolves enemies left to right and stops immediately on player death',()=>{const s=battle();s.hp=1;const e=s.combat!.enemies[0];s.combat!.enemies.push({...structuredClone(e),id:2,name:'Second'});endTurn(s);expect(s.phase).toBe('lost');expect(s.combat!.enemies[0].step).toBe(1);expect(s.combat!.enemies[1].step).toBe(0);expect(play(s,s.combat!.hand[0]?.id??1,1)).toBe(false);expect(endTurn(s)).toBe(false);});
- it('excludes dead enemies from acting and all-target damage',()=>{const s=battle();hand(s,['sweep']);const e=s.combat!.enemies[0];e.hp=0;s.combat!.enemies.push({...structuredClone(e),id:2,hp:20});play(s,100);expect(e.hp).toBe(0);expect(s.combat!.enemies[1].hp).toBe(15);endTurn(s);expect(s.hp).toBe(57);expect(e.step).toBe(0);});
- it('draw respects a ten-card hand cap',()=>{const s=battle();draw(s,50);expect(s.combat!.hand).toHaveLength(10);});
+import { describe, it, expect } from "vitest";
+import {
+  newRun,
+  chooseNode,
+  legalNodes,
+  play,
+  endTurn,
+  draw,
+  rule,
+  intent,
+  takeReward,
+  rest,
+  event,
+  restore,
+  serialize,
+  type CardKind,
+  type Run,
+} from "../src/engine";
+function battle() {
+  const s = newRun();
+  chooseNode(s, "0-1");
+  return s;
+}
+function hand(s: Run, kinds: CardKind[]) {
+  const c = s.combat!;
+  c.hand = kinds.map((kind, i) => ({ id: 100 + i, kind, upgraded: false }));
+  c.draw = [];
+  c.discard = [];
+  c.exhaust = [];
+}
+describe("combat commands", () => {
+  it("opens with five cards and three energy, reproducibly", () => {
+    const a = battle(),
+      b = battle();
+    expect(a.combat!.hand).toHaveLength(5);
+    expect(a.combat!.energy).toBe(3);
+    expect(serialize(a)).toBe(serialize(b));
+  });
+  it("requires a living target and sufficient energy without consuming cards", () => {
+    const s = battle();
+    hand(s, ["flare", "flare"]);
+    expect(play(s, 100)).toBe(false);
+    expect(play(s, 100, 99)).toBe(false);
+    expect(s.combat!.energy).toBe(3);
+    expect(play(s, 100, 1)).toBe(true);
+    expect(s.combat!.enemies[0].hp).toBe(10);
+    expect(s.combat!.energy).toBe(1);
+    expect(play(s, 101, 1)).toBe(false);
+    expect(s.combat!.hand).toHaveLength(1);
+  });
+  it("moves played cards to discard or exhaust and recycles only discard", () => {
+    const s = battle();
+    hand(s, ["cut", "read"]);
+    play(s, 100, 1);
+    play(s, 101);
+    expect(s.combat!.exhaust.map((c) => c.kind)).toEqual(["read"]);
+    expect(s.combat!.hand.map((c) => c.kind)).toEqual(["cut"]);
+    expect(s.combat!.draw).toHaveLength(0);
+  });
+  it("absorbs attack with Block, then expires remaining player Block", () => {
+    const s = battle();
+    hand(s, ["ward", "ward"]);
+    play(s, 100);
+    play(s, 101);
+    expect(s.combat!.block).toBe(10);
+    endTurn(s);
+    expect(s.hp).toBe(64);
+    expect(s.combat!.block).toBe(0);
+    expect(s.combat!.energy).toBe(3);
+    expect(s.combat!.turn).toBe(2);
+  });
+  it("discards unplayed hand and draws five by shuffling when necessary", () => {
+    const s = battle();
+    const ids = s.combat!.hand.map((c) => c.id);
+    endTurn(s);
+    expect(s.combat!.hand).toHaveLength(5);
+    expect(s.combat!.discard.map((c) => c.id)).toEqual(ids);
+    endTurn(s);
+    expect(s.combat!.hand).toHaveLength(5);
+    expect(s.combat!.draw).toHaveLength(5);
+    expect(s.combat!.discard).toHaveLength(0);
+  });
+  it("shows the exact weakened intent and ticks Weak after its owner acts", () => {
+    const s = battle();
+    hand(s, ["bash"]);
+    play(s, 100, 1);
+    expect(intent(s.combat!.enemies[0])).toMatchObject({
+      type: "attack",
+      amount: 5,
+    });
+    endTurn(s);
+    expect(s.hp).toBe(59);
+    expect(s.combat!.enemies[0].weak).toBe(1);
+    expect(intent(s.combat!.enemies[0])).toMatchObject({
+      type: "guard",
+      amount: 6,
+    });
+    endTurn(s);
+    expect(s.combat!.enemies[0].weak).toBe(0);
+    expect(s.combat!.enemies[0].block).toBe(6);
+    endTurn(s);
+    expect(s.combat!.enemies[0].block).toBe(0);
+    expect(s.hp).toBe(49);
+  });
+  it("puts a Power outside the cycle, increases attacks and caps healing", () => {
+    const s = battle();
+    hand(s, ["focus", "siphon"]);
+    play(s, 100);
+    play(s, 101, 1);
+    expect(s.combat!.powers).toHaveLength(1);
+    expect(s.combat!.enemies[0].hp).toBe(15);
+    expect(s.hp).toBe(64);
+    expect(s.combat!.exhaust).toHaveLength(1);
+  });
+  it("resolves enemies left to right and stops immediately on player death", () => {
+    const s = battle();
+    s.hp = 1;
+    const e = s.combat!.enemies[0];
+    s.combat!.enemies.push({ ...structuredClone(e), id: 2, name: "Second" });
+    endTurn(s);
+    expect(s.phase).toBe("lost");
+    expect(s.combat!.enemies[0].step).toBe(1);
+    expect(s.combat!.enemies[1].step).toBe(0);
+    expect(play(s, s.combat!.hand[0]?.id ?? 1, 1)).toBe(false);
+    expect(endTurn(s)).toBe(false);
+  });
+  it("excludes dead enemies from acting and all-target damage", () => {
+    const s = battle();
+    hand(s, ["sweep"]);
+    const e = s.combat!.enemies[0];
+    e.hp = 0;
+    s.combat!.enemies.push({ ...structuredClone(e), id: 2, hp: 20 });
+    play(s, 100);
+    expect(e.hp).toBe(0);
+    expect(s.combat!.enemies[1].hp).toBe(15);
+    endTurn(s);
+    expect(s.hp).toBe(57);
+    expect(e.step).toBe(0);
+  });
+  it("draw respects a ten-card hand cap", () => {
+    const s = battle();
+    draw(s, 50);
+    expect(s.combat!.hand).toHaveLength(10);
+  });
 });
-describe('expedition decisions',()=>{
- it('permits only connected next-tier nodes and blocks skipping tiers',()=>{const s=newRun();expect(legalNodes(s)).toHaveLength(3);expect(chooseNode(s,'5-1')).toBe(false);chooseNode(s,'0-0');s.phase='map';expect(legalNodes(s).map(n=>n.id)).toEqual(['1-0','1-1']);expect(chooseNode(s,'1-2')).toBe(false);});
- it('offers three distinct rewards with one card or skip, and heals after victory',()=>{const s=battle();hand(s,['flare']);s.hp=40;s.combat!.enemies[0].hp=1;play(s,100,1);expect(s.phase).toBe('reward');expect(s.hp).toBe(44);expect(new Set(s.rewards).size).toBe(3);const first=s.rewards[0];expect(takeReward(s,'cut')).toBe(false);expect(takeReward(s,first)).toBe(true);expect(s.deck).toHaveLength(11);expect(takeReward(s,first)).toBe(false);const b=battle();hand(b,['flare']);b.combat!.enemies[0].hp=1;play(b,100,1);takeReward(b,null);expect(b.deck).toHaveLength(10);expect(b.phase).toBe('map');});
- it('rest is exactly one heal or permanent upgrade',()=>{const s=newRun();s.phase='rest';s.hp=20;rest(s,null);expect(s.hp).toBe(39);expect(rest(s,null)).toBe(false);s.phase='rest';rest(s,s.deck[0].id);expect(rule(s.deck[0]).damage).toBe(9);expect(s.deck[0].upgraded).toBe(true);s.phase='rest';expect(rest(s,s.deck[0].id)).toBe(false);});
- it('event removal thins deck and Brass Feather grants only opening Block',()=>{const s=newRun();s.phase='event';event(s,s.deck[0].id);expect(s.deck).toHaveLength(9);s.phase='event';event(s,null);chooseNode(s,'0-1');expect(s.combat!.block).toBe(3);endTurn(s);expect(s.combat!.block).toBe(0);});
- it('elite ember grants one opening energy and boss victory is terminal',()=>{const s=battle();s.combat!.elite=true;hand(s,['flare']);s.combat!.enemies[0].hp=1;play(s,100,1);expect(s.embers).toContain('Storm Lens');takeReward(s,null);s.tier=4;s.lane=0;expect(chooseNode(s,'5-1')).toBe(true);expect(s.combat!.energy).toBe(4);endTurn(s);expect(s.combat!.energy).toBe(3);hand(s,['flare']);s.combat!.enemies[0].hp=1;play(s,100,1);expect(s.phase).toBe('won');expect(endTurn(s)).toBe(false);expect(takeReward(s,null)).toBe(false);});
+describe("expedition decisions", () => {
+  it("permits only connected next-tier nodes and blocks skipping tiers", () => {
+    const s = newRun();
+    expect(legalNodes(s)).toHaveLength(3);
+    expect(chooseNode(s, "5-1")).toBe(false);
+    chooseNode(s, "0-0");
+    s.phase = "map";
+    expect(legalNodes(s).map((n) => n.id)).toEqual(["1-0", "1-1"]);
+    expect(chooseNode(s, "1-2")).toBe(false);
+  });
+  it("offers three distinct rewards with one card or skip, and heals after victory", () => {
+    const s = battle();
+    hand(s, ["flare"]);
+    s.hp = 40;
+    s.combat!.enemies[0].hp = 1;
+    play(s, 100, 1);
+    expect(s.phase).toBe("reward");
+    expect(s.hp).toBe(44);
+    expect(new Set(s.rewards).size).toBe(3);
+    const first = s.rewards[0];
+    expect(takeReward(s, "cut")).toBe(false);
+    expect(takeReward(s, first)).toBe(true);
+    expect(s.deck).toHaveLength(11);
+    expect(takeReward(s, first)).toBe(false);
+    const b = battle();
+    hand(b, ["flare"]);
+    b.combat!.enemies[0].hp = 1;
+    play(b, 100, 1);
+    takeReward(b, null);
+    expect(b.deck).toHaveLength(10);
+    expect(b.phase).toBe("map");
+  });
+  it("rest is exactly one heal or permanent upgrade", () => {
+    const s = newRun();
+    s.phase = "rest";
+    s.hp = 20;
+    rest(s, null);
+    expect(s.hp).toBe(39);
+    expect(rest(s, null)).toBe(false);
+    s.phase = "rest";
+    rest(s, s.deck[0].id);
+    expect(rule(s.deck[0]).damage).toBe(9);
+    expect(s.deck[0].upgraded).toBe(true);
+    s.phase = "rest";
+    expect(rest(s, s.deck[0].id)).toBe(false);
+  });
+  it("event removal thins deck and Brass Feather grants only opening Block", () => {
+    const s = newRun();
+    s.phase = "event";
+    event(s, s.deck[0].id);
+    expect(s.deck).toHaveLength(9);
+    s.phase = "event";
+    event(s, null);
+    chooseNode(s, "0-1");
+    expect(s.combat!.block).toBe(3);
+    endTurn(s);
+    expect(s.combat!.block).toBe(0);
+  });
+  it("elite ember grants one opening energy and boss victory is terminal", () => {
+    const s = battle();
+    s.combat!.elite = true;
+    hand(s, ["flare"]);
+    s.combat!.enemies[0].hp = 1;
+    play(s, 100, 1);
+    expect(s.embers).toContain("Storm Lens");
+    takeReward(s, null);
+    s.tier = 4;
+    s.lane = 0;
+    expect(chooseNode(s, "5-1")).toBe(true);
+    expect(s.combat!.energy).toBe(4);
+    endTurn(s);
+    expect(s.combat!.energy).toBe(3);
+    hand(s, ["flare"]);
+    s.combat!.enemies[0].hp = 1;
+    play(s, 100, 1);
+    expect(s.phase).toBe("won");
+    expect(endTurn(s)).toBe(false);
+    expect(takeReward(s, null)).toBe(false);
+  });
 });
-describe('save boundary',()=>{
- it('round-trips exact combat and RNG state without shared references',()=>{const s=battle();endTurn(s);const r=restore(serialize(s));expect(r).toEqual(s);expect(r).not.toBe(s);});
- it('rejects invalid JSON, incompatible versions and malformed combat',()=>{expect(restore('{')).toBeNull();expect(restore(null)).toBeNull();expect(restore('{}')).toBeNull();const s=battle();expect(restore(JSON.stringify({...s,version:2}))).toBeNull();s.combat!.enemies[0].pattern=[];expect(restore(serialize(s))).toBeNull();});
+describe("save boundary", () => {
+  it("round-trips exact combat and RNG state without shared references", () => {
+    const s = battle();
+    endTurn(s);
+    const r = restore(serialize(s));
+    expect(r).toEqual(s);
+    expect(r).not.toBe(s);
+  });
+  it("rejects invalid JSON, incompatible versions and malformed combat", () => {
+    expect(restore("{")).toBeNull();
+    expect(restore(null)).toBeNull();
+    expect(restore("{}")).toBeNull();
+    const s = battle();
+    expect(restore(JSON.stringify({ ...s, version: 2 }))).toBeNull();
+    s.combat!.enemies[0].pattern = [];
+    expect(restore(serialize(s))).toBeNull();
+  });
+});
+
+describe("malformed save regressions", () => {
+  it("rejects inherited card rule names", () => {
+    const s = battle();
+    const raw = JSON.parse(serialize(s));
+    raw.deck[0].kind = "constructor";
+    expect(restore(JSON.stringify(raw))).toBeNull();
+    const reward = JSON.parse(serialize(s));
+    reward.rewards = ["__proto__"];
+    expect(restore(JSON.stringify(reward))).toBeNull();
+  });
+  it("rejects duplicate, missing or changed cards across combat zones", () => {
+    const s = battle();
+    s.combat!.draw[0] = { ...s.combat!.hand[0] };
+    expect(restore(serialize(s))).toBeNull();
+    const b = battle();
+    b.combat!.hand.pop();
+    expect(restore(serialize(b))).toBeNull();
+    const c = battle();
+    c.combat!.hand[0].upgraded = true;
+    expect(restore(serialize(c))).toBeNull();
+  });
+  it("rejects inconsistent route history and phase", () => {
+    const s = battle();
+    s.path = ["1-1"];
+    expect(restore(serialize(s))).toBeNull();
+    const b = battle();
+    b.phase = "rest";
+    expect(restore(serialize(b))).toBeNull();
+    const c = battle();
+    c.tier = 4;
+    expect(restore(serialize(c))).toBeNull();
+  });
+  it("rejects negative enemy status, duplicate identity and malformed reward combat", () => {
+    const s = battle();
+    s.combat!.enemies[0].weak = -1;
+    expect(restore(serialize(s))).toBeNull();
+    const b = battle();
+    b.combat!.enemies.push(structuredClone(b.combat!.enemies[0]));
+    expect(restore(serialize(b))).toBeNull();
+    const c = battle();
+    c.phase = "reward";
+    c.rewards = ["bash", "surge", "focus"];
+    expect(restore(serialize(c))).toBeNull();
+  });
+  it("rejects missing elite flags and invalid outcome state", () => {
+    const s = JSON.parse(serialize(battle()));
+    delete s.combat.elite;
+    expect(restore(JSON.stringify(s))).toBeNull();
+    const b = battle();
+    b.phase = "won";
+    expect(restore(serialize(b))).toBeNull();
+  });
+});
+
+describe("save log validation", () => {
+  it("rejects an empty action log before rendering", () => {
+    const s = battle();
+    s.log = [];
+    expect(restore(serialize(s))).toBeNull();
+  });
 });

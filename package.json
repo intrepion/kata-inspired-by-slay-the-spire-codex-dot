@@ -1,1 +1,22 @@
-{"name":"lantern-ascent","version":"1.0.0","private":true,"type":"module","scripts":{"dev":"vite --host 127.0.0.1 --port 5227 --strictPort","build":"tsc --noEmit && vite build","test":"vitest run","check":"tsc --noEmit","preview":"vite preview --host 127.0.0.1 --port 5227 --strictPort"},"devDependencies":{"@playwright/test":"^1.55.0","@types/node":"^24.0.0","typescript":"~5.9.3","vite":"^8.3.4","vitest":"^5.0.5"}}
+{
+  "name": "lantern-ascent",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1 --port 5227 --strictPort",
+    "build": "tsc --noEmit && vite build",
+    "test": "vitest run",
+    "check": "tsc --noEmit",
+    "preview": "vite preview --host 127.0.0.1 --port 5227 --strictPort",
+    "test:browser": "node --experimental-strip-types scripts/browser-test.mjs",
+    "tune": "node --experimental-strip-types scripts/tune.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.55.0",
+    "@types/node": "^24.0.0",
+    "typescript": "~5.9.3",
+    "vite": "^8.3.4",
+    "vitest": "^5.0.5"
+  }
+}
