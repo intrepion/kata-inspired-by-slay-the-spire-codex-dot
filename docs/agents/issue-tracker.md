@@ -1,0 +1,1 @@
+The originating delegated request is recorded in docs/SPEC.md. No external issue tracker is required. Review the initial implementation against the initial empty baseline commit, then rerun checks after corrections.
