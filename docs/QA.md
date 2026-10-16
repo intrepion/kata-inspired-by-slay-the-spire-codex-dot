@@ -28,8 +28,19 @@ All ten simulations won: **13–19 turns**, **45–60 HP remaining**. These are 
 
 The local Matt Pocock Implement / Code Review workflow was used with separate Standards and Spec reviewers against empty baseline `6d259c4`. Findings: malformed-save invariants, misleading decorative map lines, inaccessible intent descriptions, and missing modal focus containment. These were corrected, with save regression tests and headless focus coverage. No production account, credential, security policy or other project's save was modified.
 
-## Native acceptance — pending handoff
+## Native acceptance — passed, 2026-10-16
 
-The shared native browser has **not** been used by this task. The parent explicitly queued this game behind Mario Paint, California Games and Candy Crush. Native full-run acceptance requires the parent's explicit browser handoff. Headless and simulation evidence above must not be described as native gameplay.
+After the parent explicitly transferred exclusive browser ownership from Candy Crush, a new Chrome tab opened the production preview. The run used ordinary accessibility/button clicks and keyboard inputs through the native browser connection. No hidden state reads, solver, JavaScript state mutations, save injection or developer shortcuts were used for this native run. All pre-existing tabs and other project saves were left alone.
+
+- Seed **2718**, route: **Broken Steps → Brass Archivist (left lane) → Iron Orchard elite → Hollow Bridge → Quiet Hearth (center) → Beacon Keeper**.
+- Selecting Copper Edge left energy at 3 until choosing Ashwing. One attack and two shields spent all energy and yielded 10 Block against a displayed 7-damage attack. Further card-key input at 0 energy was rejected. Reload retained 64 HP, 10 Block, 0 energy, and Ashwing at 18 HP. End turn absorbed the attack, cleared remaining Block and refilled energy.
+- Chose Stone Promise, removed Copper Edge at the Archivist, earned Storm Lens from the elite, **skipped** its card reward, then chose Warmth Thief after Hollow Bridge. The next encounter opened with 4 energy from Storm Lens; subsequent turns refilled to 3.
+- Inspected the hearth's exclusive rest-versus-upgrade choices and **upgraded Last Light** rather than healing. The boss hand displayed its upgraded 17-damage description. The heal branch remains covered by engine tests, not this native run.
+- Against two enemies, targeted and eliminated Cinder Moth first, then broke Gale Husk's Block. Against the boss, 19 Block absorbed the initial 8 × 2 intent with no HP loss; the later 11 × 2 intent dealt exactly 3 through 19 Block.
+- **Won the complete bounded run at 31/64 HP, with 11 cards and 2 embers.** Victory and these displayed totals survived reload. [Native victory screenshot](screenshots/native-victory.jpg).
+- Restart confirmation led to seed 10637. Deliberately played no cards and ended 12 turns until **0 HP / Expedition Ended**. Loss survived reload. [Native loss screenshot](screenshots/native-loss.jpg).
+- Restarted once more, leaving a fresh **seed 18556** expedition at 64 HP. The game tab remains open as the deliverable. Native browser/screen/input ownership was explicitly released after this verification.
+
+No gameplay defects requiring code changes were found during native acceptance. Automated malformed-save, status timing, rest-heal, mobile and storage-sentinel results remain separately identified above; they are not claimed as native coverage.
 
 Production preview is a detached Vite process on `127.0.0.1:5227`, serving `dist`. It was independently observed listening after its launch command ended. No public website deployment is configured; the public deliverable is the GitHub source repository.
