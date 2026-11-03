@@ -40,3 +40,7 @@ This is one short act with ten original card kinds and three ember modifiers. Ro
 ## License
 
 Original code, vector art and written content: [MIT](LICENSE). No borrowed game assets. Official GitHub Global Linux/Windows/macOS ignore templates are included under their CC0 terms; links are in research notes. Build/test dependencies retain their own licenses in npm packages. System fonts and Unicode symbols are rendered by the user's OS.
+
+## Play online
+
+[Play on GitHub Pages](https://intrepion.github.io/kata-inspired-by-slay-the-spire-codex-dot/). Return to the [Kata Arcade](https://intrepion.github.io/).
