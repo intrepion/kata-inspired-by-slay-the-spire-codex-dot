@@ -1,6 +1,27 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "gameId": "kata-inspired-by-slay-the-spire-codex-dot",
   "playUrl": "https://intrepion.github.io/kata-inspired-by-slay-the-spire-codex-dot/",
-  "screenshots": []
+  "screenshots": [
+    {
+      "path": "arcade/screenshots/ci-20261103-01.jpg",
+      "sha256": "0887d0f9a7f01c46511c13fd853aa8b5a41b80ee66ab69665c16636339d6fba8",
+      "alt": "Lantern Ascent gameplay",
+      "provenance": {
+        "kind": "ci_gameplay_capture",
+        "sourcePath": "arcade/capture-evidence/ci-20261103-01.png",
+        "sourceSha256": "23c3af0facc119a5261c400b7f3e5df0676e90bc63a172c90fcb722d0a542134",
+        "captureCommit": "37c0e903ebfa4fd65d93f5014e3013b6c686b210",
+        "workflowRunId": "41618870743",
+        "inputHashes": {
+          "assets/index-8hSVS1xN.js": "b16d3c7387215ae3aede234bb46c5ece4707ade808f2196e35015ed006b63334",
+          "assets/index-CA4nZVlb.css": "bc65f77e16b1b8be3ef4dcb91ad97b251b2a5b3fcd8f25e5cd9b781f4f251211",
+          "index.html": "67880a5f6af3a087de3463be3cec94b9ff4c362be3e7d6baf1bfbe390d82a0b0"
+        },
+        "publishedFilesVerifiedAt": "2026-11-03T10:26:27Z",
+        "captureRecordPath": "arcade/capture-evidence/ci-20261103-record.json",
+        "captureRecordSha256": "f76aea9812f8421895f71745bd4706f26ccbab2fa03dc9fc8b0a115f8f98883c"
+      }
+    }
+  ]
 }
